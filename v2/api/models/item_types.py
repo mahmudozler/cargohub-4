@@ -9,13 +9,15 @@ class ItemTypes(Base):
         self.data_path = root_path + "item_type.json"
         self.load(is_debug)
 
+      """Geef de lijst met alle item types."""
     def get_item_types(self):
         return self.data
 
+        """Geef het item type met dit id, of None als het niet bestaat."""
     def get_item_type(self, item_type_id):
-        for x in self.data:
-            if x["id"] == item_type_id:
-                return x
+        for item_type in self.data:
+            if item_type["id"] == item_type_id:
+                return item_type
         return None
 
     def add_item_type(self, item_type):
@@ -39,11 +41,9 @@ class ItemTypes(Base):
         if is_debug:
             self.data = ITEM_TYPES
         else:
-            f = open(self.data_path, "r")
-            self.data = json.load(f)
-            f.close()
+            with open(self.data_path, "r", encoding="utf-8") as f:
+                self.data = json.load(f)
 
     def save(self):
-        f = open(self.data_path, "w")
-        json.dump(self.data, f)
-        f.close()
+        with open(self.data_path, "w", encoding="utf-8") as f:
+            json.dump(self.data, f)
