@@ -158,3 +158,11 @@ def test_update_location_bad_unknown_id(locations):
     assert locations.get_locations() == TEST_LOCATIONS
 
 
+def test_update_location_empty(empty_locations):
+    updated = {"id": 1, "warehouse_id": 10, "code": "A-01"}
+
+    empty_locations.update_location(1, updated)
+
+    assert empty_locations.get_locations() == []
+
+
