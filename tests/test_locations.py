@@ -149,3 +149,12 @@ def test_update_location_other_locations_unchanged(locations):
     assert locations.get_location(3) == TEST_LOCATIONS[2]
 
 
+def test_update_location_bad_unknown_id(locations):
+    updated = {"id": 999, "warehouse_id": 20, "code": "X-01"}
+
+    locations.update_location(999, updated)
+
+    assert locations.get_location(999) is None
+    assert locations.get_locations() == TEST_LOCATIONS
+
+
