@@ -195,3 +195,10 @@ def test_remove_location_empty(empty_locations):
     assert empty_locations.get_locations() == []
 
 
+def test_remove_location_save_persists(locations, tmp_path):
+    locations.remove_location(2)
+    locations.save()
+
+    reloaded = Locations(str(tmp_path) + os.sep)
+    assert reloaded.get_location(2) is None
+    assert len(reloaded.get_locations()) == 2
