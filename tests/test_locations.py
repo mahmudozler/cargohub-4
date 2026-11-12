@@ -128,3 +128,15 @@ def test_add_location_save_persists(locations, tmp_path):
     reloaded = Locations(str(tmp_path) + os.sep)
     assert reloaded.get_location(4)["code"] == "C-01"
 
+
+def test_update_location_good(locations):
+    updated = {"id": 2, "warehouse_id": 20, "code": "B-99"}
+
+    locations.update_location(2, updated)
+
+    result = locations.get_location(2)
+    assert result["code"] == "B-99"
+    assert "updated_at" in result
+    assert len(locations.get_locations()) == 3
+
+
