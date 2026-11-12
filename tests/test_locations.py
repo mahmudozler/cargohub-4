@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+from datetime import datetime, timezone
 
 import pytest
 
@@ -91,5 +92,21 @@ def test_add_location_good(locations):
     assert result["warehouse_id"] == 30
     assert result["code"] == "C-01"
     assert len(locations.get_locations()) == 4
+
+
+def test_add_location_sets_timestamps(locations):
+    new_location = {"id": 4, "warehouse_id": 30, "code": "C-01"}
+
+    before = datetime.now(timezone.utc).replace(tzinfo=None)
+    locations.add_location(new_location)
+    after = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    result = locations.get_location(4)
+    assert result["created_at"].endswith("Z")
+    assert result["updated_at"].endswith("Z")
+
+    created_at = datetime.fromisoformat(result["created_at"][:-1])
+    updated_at = datetime.fromisoformat(result["updated_at"][:-1])
+    assert before <= created_at <= updated_at <= after
 
 
