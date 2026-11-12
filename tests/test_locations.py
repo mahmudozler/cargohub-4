@@ -183,3 +183,9 @@ def test_remove_location_good(locations):
     assert locations.get_locations() == [TEST_LOCATIONS[0], TEST_LOCATIONS[2]]
 
 
+def test_remove_location_bad_unknown_id(locations):
+    locations.remove_location(999)
+
+    assert locations.get_locations() == TEST_LOCATIONS
+
+
