@@ -189,3 +189,9 @@ def test_remove_location_bad_unknown_id(locations):
     assert locations.get_locations() == TEST_LOCATIONS
 
 
+def test_remove_location_empty(empty_locations):
+    empty_locations.remove_location(1)
+
+    assert empty_locations.get_locations() == []
+
+
