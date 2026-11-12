@@ -166,3 +166,12 @@ def test_update_location_empty(empty_locations):
     assert empty_locations.get_locations() == []
 
 
+def test_update_location_save_persists(locations, tmp_path):
+    updated = {"id": 2, "warehouse_id": 20, "code": "B-99"}
+
+    locations.update_location(2, updated)
+    locations.save()
+
+    reloaded = Locations(str(tmp_path) + os.sep)
+    assert reloaded.get_location(2)["code"] == "B-99"
+
