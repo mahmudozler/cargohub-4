@@ -119,3 +119,12 @@ def test_add_location_empty(empty_locations):
     assert empty_locations.get_location(1)["code"] == "A-01"
 
 
+def test_add_location_save_persists(locations, tmp_path):
+    new_location = {"id": 4, "warehouse_id": 30, "code": "C-01"}
+
+    locations.add_location(new_location)
+    locations.save()
+
+    reloaded = Locations(str(tmp_path) + os.sep)
+    assert reloaded.get_location(4)["code"] == "C-01"
+
