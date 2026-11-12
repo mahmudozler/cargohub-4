@@ -110,3 +110,12 @@ def test_add_location_sets_timestamps(locations):
     assert before <= created_at <= updated_at <= after
 
 
+def test_add_location_empty(empty_locations):
+    new_location = {"id": 1, "warehouse_id": 10, "code": "A-01"}
+
+    empty_locations.add_location(new_location)
+
+    assert len(empty_locations.get_locations()) == 1
+    assert empty_locations.get_location(1)["code"] == "A-01"
+
+
