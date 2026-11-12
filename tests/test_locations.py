@@ -175,3 +175,11 @@ def test_update_location_save_persists(locations, tmp_path):
     reloaded = Locations(str(tmp_path) + os.sep)
     assert reloaded.get_location(2)["code"] == "B-99"
 
+
+def test_remove_location_good(locations):
+    locations.remove_location(2)
+
+    assert locations.get_location(2) is None
+    assert locations.get_locations() == [TEST_LOCATIONS[0], TEST_LOCATIONS[2]]
+
+
