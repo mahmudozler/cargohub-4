@@ -28,7 +28,6 @@ def locations(tmp_path):
 
 @pytest.fixture
 def empty_locations(tmp_path):
-    """Maak een Locations-model zonder locaties."""
     data_file = tmp_path / "location.json"
     data_file.write_text("[]", encoding="utf-8")
 
@@ -81,3 +80,16 @@ def test_get_locations_in_warehouse_bad_unknown_id(locations):
     result = locations.get_locations_in_warehouse(999)
 
     assert result == []
+
+
+def test_add_location_good(locations):
+    new_location = {"id": 4, "warehouse_id": 30, "code": "C-01"}
+
+    locations.add_location(new_location)
+
+    result = locations.get_location(4)
+    assert result["warehouse_id"] == 30
+    assert result["code"] == "C-01"
+    assert len(locations.get_locations()) == 4
+
+
