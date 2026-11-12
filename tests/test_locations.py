@@ -140,3 +140,12 @@ def test_update_location_good(locations):
     assert len(locations.get_locations()) == 3
 
 
+def test_update_location_other_locations_unchanged(locations):
+    updated = {"id": 2, "warehouse_id": 20, "code": "B-99"}
+
+    locations.update_location(2, updated)
+
+    assert locations.get_location(1) == TEST_LOCATIONS[0]
+    assert locations.get_location(3) == TEST_LOCATIONS[2]
+
+
