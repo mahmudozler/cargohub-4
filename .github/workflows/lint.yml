@@ -1,0 +1,43 @@
+name: Pylint
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  lint:
+    name: Pylint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Code ophalen
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Python installeren
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Dependencies installeren
+        run: pip install -r v2/requirements-dev.txt
+
+      - name: Gewijzigde Python bestanden ophalen
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: "**/*.py"
+
+      - name: Lint Action
+        if: steps.changed-files.outputs.any_changed == 'true'
+        uses: wearerequired/lint-action@v3.0.2
+        with:
+          pylint: true
+          pylint_args: ${{ steps.changed-files.outputs.all_changed_files }}
+          auto_fix: false
