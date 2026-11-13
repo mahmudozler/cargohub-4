@@ -1,20 +1,22 @@
 import os
 
-from models.warehouses import Warehouses
-from models.locations import Locations
-from models.transfers import Transfers
-from models.transfer_items import TransferItems
-from models.items import Items
-from models.item_lines import ItemLines
-from models.item_groups import ItemGroups
-from models.item_types import ItemTypes
-from models.inventories import Inventories
-from models.suppliers import Suppliers
-from models.orders import Orders
-from models.order_items import OrderItems
 from models.clients import Clients
-from models.shipments import Shipments
+from models.inventories import Inventories
+from models.item_groups import ItemGroups
+from models.item_lines import ItemLines
+from models.item_types import ItemTypes
+from models.items import Items
+from models.locations import Locations
+from models.order_items import OrderItems
+from models.orders import Orders
 from models.shipment_items import ShipmentItems
+from models.shipments import Shipments
+from models.suppliers import Suppliers
+from models.transfer_items import TransferItems
+from models.transfers import Transfers
+from models.warehouses import Warehouses
+
+from v2.api.database.database import SessionLocal
 
 DEBUG = False
 
@@ -61,7 +63,7 @@ def fetch_order_item_pool():
     return OrderItems(ROOT_PATH, DEBUG)
 
 def fetch_client_pool():
-    return Clients(ROOT_PATH, DEBUG)
+    return Clients(SessionLocal())
 
 def fetch_shipment_pool():
     return Shipments(ROOT_PATH, DEBUG)

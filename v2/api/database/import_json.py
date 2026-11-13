@@ -1,5 +1,3 @@
-"""Import the v1 JSON data into the SQLAlchemy PostgreSQL schema."""
-
 from __future__ import annotations
 
 import argparse
@@ -8,9 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import create_engine, delete
-from sqlalchemy.orm import Session
-
+from v2.api.database.database import engine
 from models import (
     Base,
     Client,
@@ -31,9 +27,13 @@ from models import (
     User,
     Warehouse,
 )
+from sqlalchemy import delete, select
+from sqlalchemy.orm import Session
 
-DATABASE_URL = "postgresql+psycopg://admin:admin@localhost:5433/cargohub"
-engine = create_engine(DATABASE_URL)
+# moet iets hiermee doen als deze nog een keer wordt gebruikt, want nu wordt de database connectie niet gesloten
+
+# DATABASE_URL = "postgresql+psycopg://admin:admin@localhost:5433/cargohub"
+# engine = create_engine(DATABASE_URL)
 
 
 TABLES = (
@@ -82,11 +82,23 @@ def rows_for_model(data_dir: Path, filename: str, model: type[Any]) -> list[Any]
     return result
 
 
-def import_json_data(data_dir: Path, replace: bool = False) -> None:
-    """Import every v1 JSON file in one transaction."""
+def import_json_data(data_dir: Path, replace: bool = False) -> bool:
+    """Import every v1 JSON file only when all target tables are empty."""
     Base.metadata.create_all(engine)
 
     with Session(engine) as session:
+        populated_tables = [
+            model.__tablename__
+            for model in TABLES
+            if session.execute(select(model).limit(1)).first() is not None
+        ]
+        if populated_tables:
+            print(
+                "JSON import skipped; these tables already contain data: "
+                + ", ".join(populated_tables)
+            )
+            return False
+
         if replace:
             for model in reversed(TABLES):
                 session.execute(delete(model))
@@ -127,6 +139,7 @@ def import_json_data(data_dir: Path, replace: bool = False) -> None:
             session.add(user)
 
         session.commit()
+        return True
 
 
 def main() -> None:
@@ -139,11 +152,12 @@ def main() -> None:
     parser.add_argument(
         "--replace",
         action="store_true",
-        help="Delete existing rows before importing the JSON data.",
+        help="Retained for compatibility; populated tables are never deleted.",
     )
     args = parser.parse_args()
-    import_json_data(args.data_dir, replace=args.replace)
-    print("JSON import completed.")
+    imported = import_json_data(args.data_dir, replace=args.replace)
+    if imported:
+        print("JSON import completed.")
 
 
 if __name__ == "__main__":

@@ -1,11 +1,18 @@
-import socketserver
 import http.server
 import json
+import sys
+import socketserver
+from pathlib import Path
 
-from providers import auth_provider
-from providers import data_provider
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from processors import notification_processor
+    from providers import auth_provider, data_provider
+else:
+    from v2.api.processors import notification_processor
+    from v2.api.providers import auth_provider, data_provider
 
-from processors import notification_processor
 
 class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
 
@@ -410,10 +417,12 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
             content_length = int(self.headers["Content-Length"])
             post_data = self.rfile.read(content_length)
             new_client = json.loads(post_data.decode())
-            data_provider.fetch_client_pool().add_client(new_client)
-            data_provider.fetch_client_pool().save()
+            client_pool = data_provider.fetch_client_pool()
+            created_client = client_pool.add_client(new_client)
             self.send_response(201)
+            self.send_header("Content-type", "application/json")
             self.end_headers()
+            self.wfile.write(json.dumps(created_client).encode("utf-8"))
         elif paths[0] == "shipments":
             content_length = int(self.headers["Content-Length"])
             post_data = self.rfile.read(content_length)
@@ -757,6 +766,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     PORT = 8000
+    #single-threaded server
     with socketserver.TCPServer(("", PORT), ApiRequestHandler) as httpd:
         notification_processor.start()
         print(f"Serving on port {PORT}...")
