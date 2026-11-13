@@ -1,52 +1,79 @@
-import json
+from datetime import datetime
+from typing import Any
 
-from models.base import Base
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
-CLIENTS = []
+from v2.api.database.models import Client
 
-class Clients(Base):
-    def __init__(self, root_path, is_debug=False):
-        self.data_path = root_path + "client.json"
-        self.load(is_debug)
 
-    def get_clients(self):
-        return self.data
+class Clients:
+    """Database-backed client operations."""
 
-    def get_client(self, client_id):
-        for x in self.data:
-            if x["id"] == client_id:
-                return x
-        return None
+    def __init__(self, db: Session):
+        self.db = db
 
-    def add_client(self, client):
-        client["created_at"] = self.get_timestamp()
-        client["updated_at"] = self.get_timestamp()
-        self.data.append(client)
-        self.save()
+    @staticmethod
+    def _to_dict(client: Client) -> dict[str, Any]:
+        result = {}
+        for column in Client.__table__.columns:
+            value = getattr(client, column.name)
+            result[column.name] = (
+                value.isoformat() if isinstance(value, datetime) else value
+            )
+        return result
 
-    def update_client(self, client_id, client):
-        client["updated_at"] = self.get_timestamp()
-        for i in range(len(self.data)):
-            if self.data[i]["id"] == client_id:
-                self.data[i] = client
-                break
-        self.save()
+    def get_clients(self) -> list[dict[str, Any]]:
+        try:
+            clients = self.db.scalars(select(Client).order_by(Client.id)).all()
+            return [self._to_dict(client) for client in clients]
+        finally:
+            self.db.close()
 
-    def remove_client(self, client_id):
-        for x in self.data:
-            if x["id"] == client_id:
-                self.data.remove(x)
-                self.save()
+    def get_client(self, client_id: int) -> dict[str, Any] | None:
+        try:
+            client = self.db.get(Client, client_id)
+            return self._to_dict(client) if client is not None else None
+        finally:
+            self.db.close()
 
-    def load(self, is_debug):
-        if is_debug:
-            self.data = CLIENTS
-        else:
-            f = open(self.data_path, "r")
-            self.data = json.load(f)
-            f.close()
+    # def add_client(self, client_data: dict[str, Any]) -> dict[str, Any]:
+    #     try:
+    #         client = Client(
+    #             **{
+    #                 column.name: client_data[column.name]
+    #                 for column in Client.__table__.columns
+    #                 if column.name in client_data and column.name != "id"
+    #             }
+    #         )
+    #         self.db.add(client)
+    #         self.db.commit()
+    #         self.db.refresh(client)
+    #         return self._to_dict(client)
+    #     except Exception:
+    #         self.db.rollback()
+    #         raise
+    #     finally:
+    #         self.db.close()
 
-    def save(self):
-        f = open(self.data_path, "w")
-        json.dump(self.data, f)
-        f.close()
+    # def update_client(
+    #     self, client_id: int, client_data: dict[str, Any]
+    # ) -> dict[str, Any] | None:
+    #     pass
+
+    def remove_client(self, client_id: int) -> None:
+        try:
+            existing = self.db.get(Client, client_id)
+            if existing is not None:
+                self.db.delete(existing)
+                self.db.commit()
+            else:
+                self.db.rollback()
+        except Exception:
+            self.db.rollback()
+            raise
+        finally:
+            self.db.close()
+
+    def save(self) -> None:
+        pass
