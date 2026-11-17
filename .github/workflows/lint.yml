@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: read
-  checks: write
 
 jobs:
   lint:
@@ -34,10 +33,8 @@ jobs:
         with:
           files: "**/*.py"
 
-      - name: Lint Action
+      - name: Pylint op gewijzigde bestanden
         if: steps.changed-files.outputs.any_changed == 'true'
-        uses: wearerequired/lint-action@v3.0.2
-        with:
-          pylint: true
-          pylint_args: ${{ steps.changed-files.outputs.all_changed_files }}
-          auto_fix: false
+        env:
+          CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+        run: pylint $CHANGED_FILES
