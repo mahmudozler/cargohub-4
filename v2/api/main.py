@@ -16,6 +16,11 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps(data).encode("utf-8"))
 
+    def read_json_body(self):
+        """Lees de JSON uit de body van het request en geef die terug als dict."""
+        content_length = int(self.headers["Content-Length"])
+        return json.loads(self.rfile.read(content_length).decode())
+
     def handle_get_orders(self, paths):
         parts = len(paths)
         if parts == 1:
@@ -290,6 +295,14 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
                 self.send_response(500)
                 self.end_headers()
 
+    def handle_post_items(self):
+        """POST /items: voeg een nieuw item toe en sla het op."""
+        items = data_provider.fetch_item_pool()
+        items.add_item(self.read_json_body())
+        items.save()
+        self.send_response(201)
+        self.end_headers()
+
     def handle_post_version_1(self, paths, user):
         if not auth_provider.has_access(user, paths, "post"):
             self.send_response(403)
@@ -321,13 +334,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(201)
             self.end_headers()
         elif paths[0] == "items":
-            content_length = int(self.headers["Content-Length"])
-            post_data = self.rfile.read(content_length)
-            new_item = json.loads(post_data.decode())
-            data_provider.fetch_item_pool().add_item(new_item)
-            data_provider.fetch_item_pool().save()
-            self.send_response(201)
-            self.end_headers()
+            self.handle_post_items()
         elif paths[0] == "item_lines":
             content_length = int(self.headers["Content-Length"])
             post_data = self.rfile.read(content_length)
@@ -411,6 +418,15 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
                 self.send_response(500)
                 self.end_headers()
 
+    def handle_put_items(self, paths):
+        """PUT /items/{id}: vervang het item met dit id en sla het op."""
+        item_id = int(paths[1])
+        items = data_provider.fetch_item_pool()
+        items.update_item(item_id, self.read_json_body())
+        items.save()
+        self.send_response(200)
+        self.end_headers()
+
     def handle_put_version_1(self, paths, user):
         if not auth_provider.has_access(user, paths, "put"):
             self.send_response(403)
@@ -490,14 +506,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
                     self.send_response(404)
                     self.end_headers()
         elif paths[0] == "items":
-            item_id = int(paths[1])
-            content_length = int(self.headers["Content-Length"])
-            post_data = self.rfile.read(content_length)
-            updated_item = json.loads(post_data.decode())
-            data_provider.fetch_item_pool().update_item(item_id, updated_item)
-            data_provider.fetch_item_pool().save()
-            self.send_response(200)
-            self.end_headers()
+            self.handle_put_items(paths)
         elif paths[0] == "item_lines":
             item_line_id = int(paths[1])
             content_length = int(self.headers["Content-Length"])
@@ -632,6 +641,15 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
                 self.send_response(500)
                 self.end_headers()
 
+    def handle_delete_items(self, paths):
+        """DELETE /items/{id}: verwijder het item met dit id en sla het op."""
+        item_id = int(paths[1])
+        items = data_provider.fetch_item_pool()
+        items.remove_item(item_id)
+        items.save()
+        self.send_response(200)
+        self.end_headers()
+
     def handle_delete_version_1(self, paths, user):
         if not auth_provider.has_access(user, paths, "delete"):
             self.send_response(403)
@@ -656,11 +674,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(200)
             self.end_headers()
         elif paths[0] == "items":
-            item_id = int(paths[1])
-            data_provider.fetch_item_pool().remove_item(item_id)
-            data_provider.fetch_item_pool().save()
-            self.send_response(200)
-            self.end_headers()
+            self.handle_delete_items(paths)
         elif paths[0] == "item_lines":
             item_line_id = int(paths[1])
             data_provider.fetch_item_line_pool().remove_item_line(item_line_id)
