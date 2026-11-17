@@ -108,3 +108,11 @@ def test_get_orders_does_not_change_stored_data(orders):
     orders.get_orders_for_client(10)
 
     assert orders.data == TEST_ORDERS
+
+
+NEW_ORDER = {"id": 4, "client_id": 40, "ship_to_client_id": 40, "bill_to_client_id": 40}
+UPDATED_ORDER_2 = {"id": 2, "client_id": 99, "ship_to_client_id": 10, "bill_to_client_id": 30}
+
+
+def reload_orders(tmp_path):
+    return Orders(str(tmp_path) + os.sep)
