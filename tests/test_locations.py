@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+from datetime import datetime, timezone
 
 import pytest
 
@@ -28,7 +29,6 @@ def locations(tmp_path):
 
 @pytest.fixture
 def empty_locations(tmp_path):
-    """Maak een Locations-model zonder locaties."""
     data_file = tmp_path / "location.json"
     data_file.write_text("[]", encoding="utf-8")
 
@@ -81,3 +81,124 @@ def test_get_locations_in_warehouse_bad_unknown_id(locations):
     result = locations.get_locations_in_warehouse(999)
 
     assert result == []
+
+
+def test_add_location_good(locations):
+    new_location = {"id": 4, "warehouse_id": 30, "code": "C-01"}
+
+    locations.add_location(new_location)
+
+    result = locations.get_location(4)
+    assert result["warehouse_id"] == 30
+    assert result["code"] == "C-01"
+    assert len(locations.get_locations()) == 4
+
+
+def test_add_location_sets_timestamps(locations):
+    new_location = {"id": 4, "warehouse_id": 30, "code": "C-01"}
+
+    before = datetime.now(timezone.utc).replace(tzinfo=None)
+    locations.add_location(new_location)
+    after = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    result = locations.get_location(4)
+    assert result["created_at"].endswith("Z")
+    assert result["updated_at"].endswith("Z")
+
+    created_at = datetime.fromisoformat(result["created_at"][:-1])
+    updated_at = datetime.fromisoformat(result["updated_at"][:-1])
+    assert before <= created_at <= updated_at <= after
+
+
+def test_add_location_empty(empty_locations):
+    new_location = {"id": 1, "warehouse_id": 10, "code": "A-01"}
+
+    empty_locations.add_location(new_location)
+
+    assert len(empty_locations.get_locations()) == 1
+    assert empty_locations.get_location(1)["code"] == "A-01"
+
+
+def test_add_location_save_persists(locations, tmp_path):
+    new_location = {"id": 4, "warehouse_id": 30, "code": "C-01"}
+
+    locations.add_location(new_location)
+    locations.save()
+
+    reloaded = Locations(str(tmp_path) + os.sep)
+    assert reloaded.get_location(4)["code"] == "C-01"
+
+
+def test_update_location_good(locations):
+    updated = {"id": 2, "warehouse_id": 20, "code": "B-99"}
+
+    locations.update_location(2, updated)
+
+    result = locations.get_location(2)
+    assert result["code"] == "B-99"
+    assert "updated_at" in result
+    assert len(locations.get_locations()) == 3
+
+
+def test_update_location_other_locations_unchanged(locations):
+    updated = {"id": 2, "warehouse_id": 20, "code": "B-99"}
+
+    locations.update_location(2, updated)
+
+    assert locations.get_location(1) == TEST_LOCATIONS[0]
+    assert locations.get_location(3) == TEST_LOCATIONS[2]
+
+
+def test_update_location_bad_unknown_id(locations):
+    updated = {"id": 999, "warehouse_id": 20, "code": "X-01"}
+
+    locations.update_location(999, updated)
+
+    assert locations.get_location(999) is None
+    assert locations.get_locations() == TEST_LOCATIONS
+
+
+def test_update_location_empty(empty_locations):
+    updated = {"id": 1, "warehouse_id": 10, "code": "A-01"}
+
+    empty_locations.update_location(1, updated)
+
+    assert empty_locations.get_locations() == []
+
+
+def test_update_location_save_persists(locations, tmp_path):
+    updated = {"id": 2, "warehouse_id": 20, "code": "B-99"}
+
+    locations.update_location(2, updated)
+    locations.save()
+
+    reloaded = Locations(str(tmp_path) + os.sep)
+    assert reloaded.get_location(2)["code"] == "B-99"
+
+
+def test_remove_location_good(locations):
+    locations.remove_location(2)
+
+    assert locations.get_location(2) is None
+    assert locations.get_locations() == [TEST_LOCATIONS[0], TEST_LOCATIONS[2]]
+
+
+def test_remove_location_bad_unknown_id(locations):
+    locations.remove_location(999)
+
+    assert locations.get_locations() == TEST_LOCATIONS
+
+
+def test_remove_location_empty(empty_locations):
+    empty_locations.remove_location(1)
+
+    assert empty_locations.get_locations() == []
+
+
+def test_remove_location_save_persists(locations, tmp_path):
+    locations.remove_location(2)
+    locations.save()
+
+    reloaded = Locations(str(tmp_path) + os.sep)
+    assert reloaded.get_location(2) is None
+    assert len(reloaded.get_locations()) == 2
