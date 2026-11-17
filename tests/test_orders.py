@@ -116,3 +116,9 @@ UPDATED_ORDER_2 = {"id": 2, "client_id": 99, "ship_to_client_id": 10, "bill_to_c
 
 def reload_orders(tmp_path):
     return Orders(str(tmp_path) + os.sep)
+
+
+def read_json(tmp_path, name):
+    return json.loads((tmp_path / name).read_text(encoding="utf-8"))
+
+
