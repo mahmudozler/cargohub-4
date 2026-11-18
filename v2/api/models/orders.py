@@ -53,15 +53,15 @@ class Orders(Base):
         order["created_at"] = self.get_timestamp()
         order["updated_at"] = self.get_timestamp()
         self.data.append(order)
-        data_provider.fetch_order_item_pool().set_items_for_order(order["id"], items)
+        self._save_items_for_order(order["id"], items)
 
     def update_order(self, order_id, order):
+        index = self._index_of(order_id)
+        if index is None:
+            return
         items = order.pop("items", None)
         order["updated_at"] = self.get_timestamp()
-        for i in range(len(self.data)):
-            if self.data[i]["id"] == order_id:
-                self.data[i] = order
-                break
+        self.data[index] = order
         if items is not None:
             self.update_items_in_order(order_id, items)
 
@@ -85,7 +85,8 @@ class Orders(Base):
             if item_id not in new_by_item:
                 self._apply_allocation_delta(inventory_pool, item_id, -old_amount)
 
-        data_provider.fetch_order_item_pool().set_items_for_order(order_id, items)
+        inventory_pool.save()
+        self._save_items_for_order(order_id, items)
 
     @staticmethod
     def _apply_allocation_delta(inventory_pool, item_id, delta):
@@ -97,11 +98,25 @@ class Orders(Base):
         inventory_pool.update_inventory(item_id, target["location_id"], target)
 
     def remove_order(self, order_id):
-        for x in self.data:
-            if x["id"] == order_id:
-                self.data.remove(x)
-                break
-        data_provider.fetch_order_item_pool().remove_items_for_order(order_id)
+        index = self._index_of(order_id)
+        if index is None:
+            return
+        del self.data[index]
+        order_item_pool = data_provider.fetch_order_item_pool()
+        order_item_pool.remove_items_for_order(order_id)
+        order_item_pool.save()
+
+    def _index_of(self, order_id):
+        for index, order in enumerate(self.data):
+            if order["id"] == order_id:
+                return index
+        return None
+
+    @staticmethod
+    def _save_items_for_order(order_id, items):
+        order_item_pool = data_provider.fetch_order_item_pool()
+        order_item_pool.set_items_for_order(order_id, items)
+        order_item_pool.save()
 
     def _with_items(self, order):
         order = dict(order)
