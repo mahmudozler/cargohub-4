@@ -173,3 +173,20 @@ def test_update_order_other_orders_unchanged(orders):
     assert orders.data[2] == TEST_ORDERS[2]
 
 
+def test_update_order_bad_unknown_id(orders, tmp_path):
+    orders.update_order(99, {"id": 99, "client_id": 1})
+
+    assert orders.get_order(99) is None
+    assert orders.data == TEST_ORDERS
+    assert read_json(tmp_path, "order_item.json") == TEST_ORDER_ITEMS
+
+
+def test_remove_order_good(orders, tmp_path):
+    orders.remove_order(2)
+    orders.save()
+
+    reloaded = reload_orders(tmp_path)
+    assert reloaded.get_order(2) is None
+    assert len(reloaded.data) == 2
+
+
