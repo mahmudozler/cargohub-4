@@ -150,3 +150,26 @@ def test_add_order_bad_not_saved_without_save(orders, tmp_path):
     assert reload_orders(tmp_path).get_order(4) is None
 
 
+def test_update_order_good(orders, tmp_path):
+    orders.update_order(2, dict(UPDATED_ORDER_2))
+    orders.save()
+
+    updated = reload_orders(tmp_path).get_order(2)
+    assert updated["client_id"] == 99
+    assert "updated_at" in updated
+
+
+def test_update_order_keeps_items_without_items_in_body(orders, tmp_path):
+    orders.update_order(2, dict(UPDATED_ORDER_2))
+    orders.save()
+
+    assert reload_orders(tmp_path).get_items_in_order(2) == [{"item_id": 12, "amount": 7}]
+
+
+def test_update_order_other_orders_unchanged(orders):
+    orders.update_order(2, dict(UPDATED_ORDER_2))
+
+    assert orders.data[0] == TEST_ORDERS[0]
+    assert orders.data[2] == TEST_ORDERS[2]
+
+
