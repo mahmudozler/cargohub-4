@@ -10,16 +10,37 @@ from processors import notification_processor
 class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
 
     def send_json(self, data):
-        """Stuur data terug als JSON met status 200."""
+        """Stuur data terug als json met status 200."""
         self.send_response(200)
         self.send_header("Content-type", "application/json")
         self.end_headers()
         self.wfile.write(json.dumps(data).encode("utf-8"))
 
     def read_json_body(self):
-        """Lees de JSON uit de body van het request en geef die terug als dict."""
-        content_length = int(self.headers["Content-Length"])
-        return json.loads(self.rfile.read(content_length).decode())
+        """Lees de json uit de body. Geeft None als er geen geldige jsonbody is."""
+        try:
+            content_length = int(self.headers["Content-Length"])
+            body = json.loads(self.rfile.read(content_length).decode())
+        except (TypeError, ValueError):
+            return None
+        return body if isinstance(body, dict) else None
+
+    def send_error_json(self, status, message):
+        """Stuur een foutmelding terug."""
+        self.send_response(status)
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps({"error": message}).encode("utf-8"))
+
+    def find_record(self, id_text, find, name):
+        """Zoek een record op id. Stuurt zelf 422 of 404 en geeft dan None."""
+        if not id_text.isdigit():
+            self.send_error_json(422, f"Het id van {name} moet een getal zijn")
+            return None
+        record = find(int(id_text))
+        if record is None:
+            self.send_error_json(404, f"{name} {id_text} bestaat niet")
+        return record
 
     def handle_get_orders(self, paths):
         parts = len(paths)
@@ -69,20 +90,20 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
         parts = len(paths)
         if parts == 1:
             self.send_json(data_provider.fetch_item_pool().get_items())
-        elif parts == 2:
-            item_id = int(paths[1])
-            self.send_json(data_provider.fetch_item_pool().get_item(item_id))
+            return
+        item = self.find_record(paths[1], data_provider.fetch_item_pool().get_item, "item")
+        if item is None:
+            return
+        if parts == 2:
+            self.send_json(item)
         elif parts == 3 and paths[2] == "inventory":
-            item_id = int(paths[1])
-            inventories = data_provider.fetch_inventory_pool().get_inventories_for_item(item_id)
+            inventories = data_provider.fetch_inventory_pool().get_inventories_for_item(item["id"])
             self.send_json(inventories)
         elif parts == 4 and paths[2] == "inventory" and paths[3] == "totals":
-            item_id = int(paths[1])
-            totals = data_provider.fetch_inventory_pool().get_inventory_totals_for_item(item_id)
+            totals = data_provider.fetch_inventory_pool().get_inventory_totals_for_item(item["id"])
             self.send_json(totals)
         else:
-            self.send_response(404)
-            self.end_headers()
+            self.send_error_json(404, "Dit pad bestaat niet")
 
     def handle_get_item_lines(self, paths):
         """Handel GET /item_lines, /item_lines/{id} en /item_lines/{id}/items af."""
@@ -325,9 +346,17 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
                 self.end_headers()
 
     def handle_post_items(self):
-        """POST /items: voeg een nieuw item toe en sla het op."""
+        """POST /items: controleer de velden, voeg het item toe en sla het op."""
         items = data_provider.fetch_item_pool()
-        items.add_item(self.read_json_body())
+        item = self.read_json_body()
+        if item is None:
+            self.send_error_json(422, "De body moet geldige JSON zijn")
+            return
+        missing = items.get_missing_fields(item)
+        if missing:
+            self.send_error_json(422, f"Deze velden ontbreken: {', '.join(missing)}")
+            return
+        items.add_item(item)
         items.save()
         self.send_response(201)
         self.end_headers()
@@ -442,10 +471,23 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
                 self.end_headers()
 
     def handle_put_items(self, paths):
-        """PUT /items/{id}: vervang het item met dit id en sla het op."""
-        item_id = int(paths[1])
+        """PUT /items/id: controleer id en velden, vervang het item en sla op."""
+        if len(paths) != 2:
+            self.send_error_json(404, "Dit pad bestaat niet")
+            return
         items = data_provider.fetch_item_pool()
-        items.update_item(item_id, self.read_json_body())
+        existing = self.find_record(paths[1], items.get_item, "item")
+        if existing is None:
+            return
+        item = self.read_json_body()
+        if item is None:
+            self.send_error_json(422, "De body moet geldige JSON zijn")
+            return
+        missing = items.get_missing_fields(item)
+        if missing:
+            self.send_error_json(422, f"Deze velden ontbreken: {', '.join(missing)}")
+            return
+        items.update_item(existing["id"], item)
         items.save()
         self.send_response(200)
         self.end_headers()
@@ -639,10 +681,15 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
                 self.end_headers()
 
     def handle_delete_items(self, paths):
-        """DELETE /items/{id}: verwijder het item met dit id en sla het op."""
-        item_id = int(paths[1])
+        """DELETE /items/id: controleer het id, verwijder het item en sla op."""
+        if len(paths) != 2:
+            self.send_error_json(404, "Dit pad bestaat niet")
+            return
         items = data_provider.fetch_item_pool()
-        items.remove_item(item_id)
+        existing = self.find_record(paths[1], items.get_item, "item")
+        if existing is None:
+            return
+        items.remove_item(existing["id"])
         items.save()
         self.send_response(200)
         self.end_headers()
