@@ -190,3 +190,14 @@ def test_remove_order_good(orders, tmp_path):
     assert len(reloaded.data) == 2
 
 
+def test_remove_order_bad_unknown_id(orders, tmp_path):
+    orders.remove_order(99)
+
+    assert orders.data == TEST_ORDERS
+    assert read_json(tmp_path, "order_item.json") == TEST_ORDER_ITEMS
+
+
+def test_remove_order_empty(empty_orders):
+    empty_orders.remove_order(1)
+
+    assert empty_orders.data == []
