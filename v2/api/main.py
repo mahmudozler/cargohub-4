@@ -56,6 +56,35 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
 
+    def handle_post_orders(self):
+        orders = data_provider.fetch_order_pool()
+        orders.add_order(self.read_json_body())
+        orders.save()
+        self.send_response(201)
+        self.end_headers()
+
+    def handle_put_orders(self, paths):
+        parts = len(paths)
+        orders = data_provider.fetch_order_pool()
+        if parts == 2:
+            orders.update_order(int(paths[1]), self.read_json_body())
+        elif parts == 3 and paths[2] == "items":
+            orders.update_items_in_order(int(paths[1]), self.read_json_body())
+        else:
+            self.send_response(404)
+            self.end_headers()
+            return
+        orders.save()
+        self.send_response(200)
+        self.end_headers()
+
+    def handle_delete_orders(self, paths):
+        orders = data_provider.fetch_order_pool()
+        orders.remove_order(int(paths[1]))
+        orders.save()
+        self.send_response(200)
+        self.end_headers()
+
     def handle_get_items(self, paths):
         """Handel GET /items, /items/{id}, /items/{id}/inventory en .../inventory/totals af."""
         parts = len(paths)
@@ -283,7 +312,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
                     self.send_response(200)
                     self.send_header("Content-type", "application/json")
                     self.end_headers()
-                    self.wfile.write(json.dumps(client).encode("utf-8"))     
+                    self.wfile.write(json.dumps(client).encode("utf-8"))
                 case 3:
                     if paths[2] == "orders":
                         client_id = int(paths[1])
@@ -294,7 +323,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
                         self.end_headers()
                 case _:
                     self.send_response(404)
-                    self.end_headers() 
+                    self.end_headers()
         elif paths[0] == "shipments":
             self.handle_get_shipments(paths)
         else:
@@ -304,7 +333,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         api_key = self.headers.get("API_KEY")
         user = auth_provider.get_user(api_key)
-        if user == None:
+        if user is None:
             self.send_response(401)
             self.end_headers()
         else:
@@ -312,7 +341,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
                 paths = self.path.split("/")
                 if len(paths) > 3 and paths[1] == "api" and paths[2] == "v1":
                     self.handle_get_version_1(paths[3:], user)
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught  # any error -> 500
                 self.send_response(500)
                 self.end_headers()
 
@@ -405,13 +434,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(201)
             self.end_headers()
         elif paths[0] == "orders":
-            content_length = int(self.headers["Content-Length"])
-            post_data = self.rfile.read(content_length)
-            new_order = json.loads(post_data.decode())
-            data_provider.fetch_order_pool().add_order(new_order)
-            data_provider.fetch_order_pool().save()
-            self.send_response(201)
-            self.end_headers()
+            self.handle_post_orders()
         elif paths[0] == "clients":
             content_length = int(self.headers["Content-Length"])
             post_data = self.rfile.read(content_length)
@@ -435,7 +458,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         api_key = self.headers.get("API_KEY")
         user = auth_provider.get_user(api_key)
-        if user == None:
+        if user is None:
             self.send_response(401)
             self.end_headers()
         else:
@@ -443,7 +466,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
                 paths = self.path.split("/")
                 if len(paths) > 3 and paths[1] == "api" and paths[2] == "v1":
                     self.handle_post_version_1(paths[3:], user)
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught  # any error -> 500
                 self.send_response(500)
                 self.end_headers()
 
@@ -591,33 +614,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(200)
             self.end_headers()
         elif paths[0] == "orders":
-            parts = len(paths)
-            match parts:
-                case 2:
-                    order_id = int(paths[1])
-                    content_length = int(self.headers["Content-Length"])
-                    post_data = self.rfile.read(content_length)
-                    updated_order = json.loads(post_data.decode())
-                    data_provider.fetch_order_pool().update_order(order_id, updated_order)
-                    data_provider.fetch_order_pool().save()
-                    self.send_response(200)
-                    self.end_headers()
-                case 3:
-                    if paths[2] == "items":
-                        order_id = int(paths[1])
-                        content_length = int(self.headers["Content-Length"])
-                        post_data = self.rfile.read(content_length)
-                        updated_items = json.loads(post_data.decode())
-                        data_provider.fetch_order_pool().update_items_in_order(order_id, updated_items)
-                        data_provider.fetch_order_pool().save()
-                        self.send_response(200)
-                        self.end_headers()
-                    else:
-                        self.send_response(404)
-                        self.end_headers()
-                case _:
-                    self.send_response(404)
-                    self.end_headers()
+            self.handle_put_orders(paths)
         elif paths[0] == "clients":
             client_id = int(paths[1])
             content_length = int(self.headers["Content-Length"])
@@ -671,7 +668,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
     def do_PUT(self):
         api_key = self.headers.get("API_KEY")
         user = auth_provider.get_user(api_key)
-        if user == None:
+        if user is None:
             self.send_response(401)
             self.end_headers()
         else:
@@ -679,7 +676,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
                 paths = self.path.split("/")
                 if len(paths) > 3 and paths[1] == "api" and paths[2] == "v1":
                     self.handle_put_version_1(paths[3:], user)
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught  # any error -> 500
                 self.send_response(500)
                 self.end_headers()
 
@@ -750,11 +747,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(200)
             self.end_headers()
         elif paths[0] == "orders":
-            order_id = int(paths[1])
-            data_provider.fetch_order_pool().remove_order(order_id)
-            data_provider.fetch_order_pool().save()
-            self.send_response(200)
-            self.end_headers()
+            self.handle_delete_orders(paths)
         elif paths[0] == "clients":
             client_id = int(paths[1])
             data_provider.fetch_client_pool().remove_client(client_id)
@@ -774,7 +767,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
     def do_DELETE(self):
         api_key = self.headers.get("API_KEY")
         user = auth_provider.get_user(api_key)
-        if user == None:
+        if user is None:
             self.send_response(401)
             self.end_headers()
         else:
@@ -782,7 +775,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
                 paths = self.path.split("/")
                 if len(paths) > 3 and paths[1] == "api" and paths[2] == "v1":
                     self.handle_delete_version_1(paths[3:], user)
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught  # any error -> 500
                 self.send_response(500)
                 self.end_headers()
 
