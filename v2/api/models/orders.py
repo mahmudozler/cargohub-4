@@ -43,9 +43,7 @@ class Orders(Base):
     def get_orders_for_client(self, client_id):
         return [
             self._with_items(order) for order in self.data
-            if (order["client_id"] == client_id
-                or order["ship_to_client_id"] == client_id
-                or order["bill_to_client_id"] == client_id)
+            if client_id in (order["client_id"], order["ship_to_client_id"], order["bill_to_client_id"])
         ]
 
     def add_order(self, order):
@@ -127,9 +125,9 @@ class Orders(Base):
         if is_debug:
             self.data = ORDERS
         else:
-            with open(self.data_path, "r") as f:
+            with open(self.data_path, "r", encoding="utf-8") as f:
                 self.data = json.load(f)
 
     def save(self):
-        with open(self.data_path, "w") as f:
+        with open(self.data_path, "w", encoding="utf-8") as f:
             json.dump(self.data, f)
