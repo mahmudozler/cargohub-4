@@ -131,3 +131,22 @@ def test_add_order_good(orders, tmp_path):
     assert "created_at" in new_order and "updated_at" in new_order
 
 
+def test_add_order_items_not_in_order_record(orders):
+    orders.add_order({**NEW_ORDER, "items": [{"item_id": 10, "amount": 3}]})
+
+    assert "items" not in orders.data[-1]
+
+
+def test_add_order_without_items(orders, tmp_path):
+    orders.add_order(dict(NEW_ORDER))
+    orders.save()
+
+    assert reload_orders(tmp_path).get_order(4)["items"] == []
+
+
+def test_add_order_bad_not_saved_without_save(orders, tmp_path):
+    orders.add_order(dict(NEW_ORDER))
+
+    assert reload_orders(tmp_path).get_order(4) is None
+
+
