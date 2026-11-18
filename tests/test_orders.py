@@ -122,3 +122,12 @@ def read_json(tmp_path, name):
     return json.loads((tmp_path / name).read_text(encoding="utf-8"))
 
 
+def test_add_order_good(orders, tmp_path):
+    orders.add_order({**NEW_ORDER, "items": [{"item_id": 10, "amount": 3}]})
+    orders.save()
+
+    new_order = reload_orders(tmp_path).get_order(4)
+    assert new_order["client_id"] == 40
+    assert "created_at" in new_order and "updated_at" in new_order
+
+
