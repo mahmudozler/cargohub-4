@@ -108,3 +108,96 @@ def test_get_orders_does_not_change_stored_data(orders):
     orders.get_orders_for_client(10)
 
     assert orders.data == TEST_ORDERS
+
+
+NEW_ORDER = {"id": 4, "client_id": 40, "ship_to_client_id": 40, "bill_to_client_id": 40}
+UPDATED_ORDER_2 = {"id": 2, "client_id": 99, "ship_to_client_id": 10, "bill_to_client_id": 30}
+
+
+def reload_orders(tmp_path):
+    return Orders(str(tmp_path) + os.sep)
+
+
+def read_json(tmp_path, name):
+    return json.loads((tmp_path / name).read_text(encoding="utf-8"))
+
+
+def test_add_order_good(orders, tmp_path):
+    orders.add_order({**NEW_ORDER, "items": [{"item_id": 10, "amount": 3}]})
+    orders.save()
+
+    new_order = reload_orders(tmp_path).get_order(4)
+    assert new_order["client_id"] == 40
+    assert "created_at" in new_order and "updated_at" in new_order
+
+
+def test_add_order_items_not_in_order_record(orders):
+    orders.add_order({**NEW_ORDER, "items": [{"item_id": 10, "amount": 3}]})
+
+    assert "items" not in orders.data[-1]
+
+
+def test_add_order_without_items(orders, tmp_path):
+    orders.add_order(dict(NEW_ORDER))
+    orders.save()
+
+    assert reload_orders(tmp_path).get_order(4)["items"] == []
+
+
+def test_add_order_bad_not_saved_without_save(orders, tmp_path):
+    orders.add_order(dict(NEW_ORDER))
+
+    assert reload_orders(tmp_path).get_order(4) is None
+
+
+def test_update_order_good(orders, tmp_path):
+    orders.update_order(2, dict(UPDATED_ORDER_2))
+    orders.save()
+
+    updated = reload_orders(tmp_path).get_order(2)
+    assert updated["client_id"] == 99
+    assert "updated_at" in updated
+
+
+def test_update_order_keeps_items_without_items_in_body(orders, tmp_path):
+    orders.update_order(2, dict(UPDATED_ORDER_2))
+    orders.save()
+
+    assert reload_orders(tmp_path).get_items_in_order(2) == [{"item_id": 12, "amount": 7}]
+
+
+def test_update_order_other_orders_unchanged(orders):
+    orders.update_order(2, dict(UPDATED_ORDER_2))
+
+    assert orders.data[0] == TEST_ORDERS[0]
+    assert orders.data[2] == TEST_ORDERS[2]
+
+
+def test_update_order_bad_unknown_id(orders, tmp_path):
+    orders.update_order(99, {"id": 99, "client_id": 1})
+
+    assert orders.get_order(99) is None
+    assert orders.data == TEST_ORDERS
+    assert read_json(tmp_path, "order_item.json") == TEST_ORDER_ITEMS
+
+
+def test_remove_order_good(orders, tmp_path):
+    orders.remove_order(2)
+    orders.save()
+
+    reloaded = reload_orders(tmp_path)
+    assert reloaded.get_order(2) is None
+    assert len(reloaded.data) == 2
+
+
+def test_remove_order_bad_unknown_id(orders, tmp_path):
+    orders.remove_order(99)
+
+    assert orders.data == TEST_ORDERS
+    assert read_json(tmp_path, "order_item.json") == TEST_ORDER_ITEMS
+
+
+def test_remove_order_empty(empty_orders):
+    empty_orders.remove_order(1)
+
+    assert empty_orders.data == []
