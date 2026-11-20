@@ -95,3 +95,68 @@ def test_get_items_for_supplier_good(items):
 def test_get_items_for_supplier_bad_unknown_id(items):
     """Slecht: leverancier 99 bestaat niet, dus een lege lijst."""
     assert items.get_items_for_supplier(99) == []
+
+
+# Testdata voor POST en PUT.
+NEW_ITEM = {"id": 4, "item_line_id": 3, "item_group_id": 3, "item_type_id": 3, "supplier_id": 12}
+UPDATED_ITEM_2 = {   "id": 2, "item_line_id": 9, "item_group_id": 1, "item_type_id": 2, "supplier_id": 10}
+
+
+# add_item (POST)
+
+def test_add_item_good(items, tmp_path):
+    """Goed: het nieuwe item staat na save in de lijst en in het bestand, met tijden erbij."""
+    items.add_item(dict(NEW_ITEM))
+    items.save()
+
+    reloaded = Items(str(tmp_path) + os.sep)
+    new_item = reloaded.get_item(4)
+    assert new_item is not None
+    assert "created_at" in new_item and "updated_at" in new_item
+
+
+def test_add_item_bad_not_saved_without_save(items, tmp_path):
+    """Slecht: zonder save komt het nieuwe item niet in het bestand."""
+    items.add_item(dict(NEW_ITEM))
+
+    reloaded = Items(str(tmp_path) + os.sep)
+    assert reloaded.get_item(4) is None
+
+
+# update_item (PUT)
+
+def test_update_item_good(items, tmp_path):
+    """Goed: item 2 krijgt de nieuwe gegevens, ook na save in het bestand."""
+    items.update_item(2, dict(UPDATED_ITEM_2))
+    items.save()
+
+    reloaded = Items(str(tmp_path) + os.sep)
+    assert reloaded.get_item(2)["item_line_id"] == 9
+    assert "updated_at" in reloaded.get_item(2)
+
+
+def test_update_item_bad_unknown_id(items):
+    """Slecht: item 99 bestaat niet, dus er verandert niets aan de lijst."""
+    items.update_item(99, {"id": 99, "item_line_id": 9})
+
+    assert items.get_item(99) is None
+    assert len(items.get_items()) == 3
+
+
+# remove_item (DELETE)
+
+def test_remove_item_good(items, tmp_path):
+    """Goed: item 2 is weg, ook na save uit het bestand."""
+    items.remove_item(2)
+    items.save()
+
+    reloaded = Items(str(tmp_path) + os.sep)
+    assert reloaded.get_item(2) is None
+    assert len(reloaded.get_items()) == 2
+
+
+def test_remove_item_bad_unknown_id(items):
+    """Slecht: item 99 bestaat niet, dus de lijst blijft hetzelfde."""
+    items.remove_item(99)
+
+    assert items.get_items() == TEST_ITEMS
