@@ -23,54 +23,6 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps(data).encode("utf-8"))
 
-    def read_json_body(self):
-        """Lees de JSON uit de body van het request en geef die terug als dict."""
-        content_length = int(self.headers["Content-Length"])
-        return json.loads(self.rfile.read(content_length).decode())
-
-    def handle_get_orders(self, paths):
-        parts = len(paths)
-        if parts == 1:
-            self.send_json(data_provider.fetch_order_pool().get_orders())
-        elif parts == 2:
-            order_id = int(paths[1])
-            self.send_json(data_provider.fetch_order_pool().get_order(order_id))
-        elif parts == 3 and paths[2] == "items":
-            order_id = int(paths[1])
-            self.send_json(data_provider.fetch_order_pool().get_items_in_order(order_id))
-        else:
-            self.send_response(404)
-            self.end_headers()
-
-    def handle_post_orders(self):
-        orders = data_provider.fetch_order_pool()
-        orders.add_order(self.read_json_body())
-        orders.save()
-        self.send_response(201)
-        self.end_headers()
-
-    def handle_put_orders(self, paths):
-        parts = len(paths)
-        orders = data_provider.fetch_order_pool()
-        if parts == 2:
-            orders.update_order(int(paths[1]), self.read_json_body())
-        elif parts == 3 and paths[2] == "items":
-            orders.update_items_in_order(int(paths[1]), self.read_json_body())
-        else:
-            self.send_response(404)
-            self.end_headers()
-            return
-        orders.save()
-        self.send_response(200)
-        self.end_headers()
-
-    def handle_delete_orders(self, paths):
-        orders = data_provider.fetch_order_pool()
-        orders.remove_order(int(paths[1]))
-        orders.save()
-        self.send_response(200)
-        self.end_headers()
-
     def handle_get_items(self, paths):
         """Handel GET /items, /items/{id}, /items/{id}/inventory en .../inventory/totals af."""
         parts = len(paths)
@@ -132,21 +84,6 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
         elif parts == 3 and paths[2] == "items":
             shipment_id = int(paths[1])
             self.send_json(data_provider.fetch_shipment_pool().get_items_in_shipment(shipment_id))
-        else:
-            self.send_response(404)
-            self.end_headers()
-
-    def handle_get_item_types(self, paths):
-        """Handel GET /item_types, /item_types/{id} en /item_types/{id}/items af."""
-        parts = len(paths)
-        if parts == 1:
-            self.send_json(data_provider.fetch_item_type_pool().get_item_types())
-        elif parts == 2:
-            item_type_id = int(paths[1])
-            self.send_json(data_provider.fetch_item_type_pool().get_item_type(item_type_id))
-        elif parts == 3 and paths[2] == "items":
-            item_type_id = int(paths[1])
-            self.send_json(data_provider.fetch_item_pool().get_items_for_item_type(item_type_id))
         else:
             self.send_response(404)
             self.end_headers()
@@ -261,7 +198,35 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
                     self.send_response(404)
                     self.end_headers()
         elif paths[0] == "item_types":
-            self.handle_get_item_types(paths)
+            parts = len(paths)
+            match parts:
+                case 1:
+                    item_types = data_provider.fetch_item_type_pool().get_item_types()
+                    self.send_response(200)
+                    self.send_header("Content-type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(json.dumps(item_types).encode("utf-8"))
+                case 2:
+                    item_type_id = int(paths[1])
+                    item_type = data_provider.fetch_item_type_pool().get_item_type(item_type_id)
+                    self.send_response(200)
+                    self.send_header("Content-type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(json.dumps(item_type).encode("utf-8"))
+                case 3:
+                    if paths[2] == "items":
+                        item_type_id = int(paths[1])
+                        items = data_provider.fetch_item_pool().get_items_for_item_type(item_type_id)
+                        self.send_response(200)
+                        self.send_header("Content-type", "application/json")
+                        self.end_headers()
+                        self.wfile.write(json.dumps(items).encode("utf-8"))
+                    else:
+                        self.send_response(404)
+                        self.end_headers()
+                case _:
+                    self.send_response(404)
+                    self.end_headers()
         elif paths[0] == "inventories":
             parts = len(paths)
             match parts:
@@ -282,7 +247,35 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
         elif paths[0] == "suppliers":
             self.handle_get_suppliers(paths)
         elif paths[0] == "orders":
-            self.handle_get_orders(paths)
+            parts = len(paths)
+            match parts:
+                case 1:
+                    orders = data_provider.fetch_order_pool().get_orders()
+                    self.send_response(200)
+                    self.send_header("Content-type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(json.dumps(orders).encode("utf-8"))
+                case 2:
+                    order_id = int(paths[1])
+                    order = data_provider.fetch_order_pool().get_order(order_id)
+                    self.send_response(200)
+                    self.send_header("Content-type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(json.dumps(order).encode("utf-8"))
+                case 3:
+                    if paths[2] == "items":
+                        order_id = int(paths[1])
+                        items = data_provider.fetch_order_pool().get_items_in_order(order_id)
+                        self.send_response(200)
+                        self.send_header("Content-type", "application/json")
+                        self.end_headers()
+                        self.wfile.write(json.dumps(items).encode("utf-8"))
+                    else:
+                        self.send_response(404)
+                        self.end_headers()
+                case _:
+                    self.send_response(404)
+                    self.end_headers()
         elif paths[0] == "clients":
             parts = len(paths)
             match parts:
@@ -298,18 +291,21 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
                     self.send_response(200)
                     self.send_header("Content-type", "application/json")
                     self.end_headers()
-                    self.wfile.write(json.dumps(client).encode("utf-8"))
+                    self.wfile.write(json.dumps(client).encode("utf-8"))     
                 case 3:
                     if paths[2] == "orders":
                         client_id = int(paths[1])
                         orders = data_provider.fetch_order_pool().get_orders_for_client(client_id)
-                        self.send_json(orders)
+                        self.send_response(200)
+                        self.send_header("Content-type", "application/json")
+                        self.end_headers()
+                        self.wfile.write(json.dumps(orders).encode("utf-8"))
                     else:
                         self.send_response(404)
                         self.end_headers()
                 case _:
                     self.send_response(404)
-                    self.end_headers()
+                    self.end_headers() 
         elif paths[0] == "shipments":
             self.handle_get_shipments(paths)
         else:
@@ -319,7 +315,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         api_key = self.headers.get("API_KEY")
         user = auth_provider.get_user(api_key)
-        if user is None:
+        if user == None:
             self.send_response(401)
             self.end_headers()
         else:
@@ -327,17 +323,9 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
                 paths = self.path.split("/")
                 if len(paths) > 3 and paths[1] == "api" and paths[2] == "v1":
                     self.handle_get_version_1(paths[3:], user)
-            except Exception:  # pylint: disable=broad-exception-caught  # any error -> 500
+            except Exception:
                 self.send_response(500)
                 self.end_headers()
-
-    def handle_post_items(self):
-        """POST /items: voeg een nieuw item toe en sla het op."""
-        items = data_provider.fetch_item_pool()
-        items.add_item(self.read_json_body())
-        items.save()
-        self.send_response(201)
-        self.end_headers()
 
     def handle_post_version_1(self, paths, user):
         if not auth_provider.has_access(user, paths, "post"):
@@ -370,7 +358,13 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(201)
             self.end_headers()
         elif paths[0] == "items":
-            self.handle_post_items()
+            content_length = int(self.headers["Content-Length"])
+            post_data = self.rfile.read(content_length)
+            new_item = json.loads(post_data.decode())
+            data_provider.fetch_item_pool().add_item(new_item)
+            data_provider.fetch_item_pool().save()
+            self.send_response(201)
+            self.end_headers()
         elif paths[0] == "item_lines":
             content_length = int(self.headers["Content-Length"])
             post_data = self.rfile.read(content_length)
@@ -412,7 +406,13 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(201)
             self.end_headers()
         elif paths[0] == "orders":
-            self.handle_post_orders()
+            content_length = int(self.headers["Content-Length"])
+            post_data = self.rfile.read(content_length)
+            new_order = json.loads(post_data.decode())
+            data_provider.fetch_order_pool().add_order(new_order)
+            data_provider.fetch_order_pool().save()
+            self.send_response(201)
+            self.end_headers()
         elif paths[0] == "clients":
             content_length = int(self.headers["Content-Length"])
             post_data = self.rfile.read(content_length)
@@ -438,7 +438,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         api_key = self.headers.get("API_KEY")
         user = auth_provider.get_user(api_key)
-        if user is None:
+        if user == None:
             self.send_response(401)
             self.end_headers()
         else:
@@ -535,7 +535,14 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
                     self.send_response(404)
                     self.end_headers()
         elif paths[0] == "items":
-            self.handle_put_items(paths)
+            item_id = int(paths[1])
+            content_length = int(self.headers["Content-Length"])
+            post_data = self.rfile.read(content_length)
+            updated_item = json.loads(post_data.decode())
+            data_provider.fetch_item_pool().update_item(item_id, updated_item)
+            data_provider.fetch_item_pool().save()
+            self.send_response(200)
+            self.end_headers()
         elif paths[0] == "item_lines":
             item_line_id = int(paths[1])
             content_length = int(self.headers["Content-Length"])
@@ -578,7 +585,33 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(200)
             self.end_headers()
         elif paths[0] == "orders":
-            self.handle_put_orders(paths)
+            parts = len(paths)
+            match parts:
+                case 2:
+                    order_id = int(paths[1])
+                    content_length = int(self.headers["Content-Length"])
+                    post_data = self.rfile.read(content_length)
+                    updated_order = json.loads(post_data.decode())
+                    data_provider.fetch_order_pool().update_order(order_id, updated_order)
+                    data_provider.fetch_order_pool().save()
+                    self.send_response(200)
+                    self.end_headers()
+                case 3:
+                    if paths[2] == "items":
+                        order_id = int(paths[1])
+                        content_length = int(self.headers["Content-Length"])
+                        post_data = self.rfile.read(content_length)
+                        updated_items = json.loads(post_data.decode())
+                        data_provider.fetch_order_pool().update_items_in_order(order_id, updated_items)
+                        data_provider.fetch_order_pool().save()
+                        self.send_response(200)
+                        self.end_headers()
+                    else:
+                        self.send_response(404)
+                        self.end_headers()
+                case _:
+                    self.send_response(404)
+                    self.end_headers()
         elif paths[0] == "clients":
             try:
                 client_id = int(paths[1])
@@ -642,7 +675,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
     def do_PUT(self):
         api_key = self.headers.get("API_KEY")
         user = auth_provider.get_user(api_key)
-        if user is None:
+        if user == None:
             self.send_response(401)
             self.end_headers()
         else:
@@ -650,18 +683,9 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
                 paths = self.path.split("/")
                 if len(paths) > 3 and paths[1] == "api" and paths[2] == "v1":
                     self.handle_put_version_1(paths[3:], user)
-            except Exception:  # pylint: disable=broad-exception-caught  # any error -> 500
+            except Exception:
                 self.send_response(500)
                 self.end_headers()
-
-    def handle_delete_items(self, paths):
-        """DELETE /items/{id}: verwijder het item met dit id en sla het op."""
-        item_id = int(paths[1])
-        items = data_provider.fetch_item_pool()
-        items.remove_item(item_id)
-        items.save()
-        self.send_response(200)
-        self.end_headers()
 
     def handle_delete_version_1(self, paths, user):
         if not auth_provider.has_access(user, paths, "delete"):
@@ -687,7 +711,11 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(200)
             self.end_headers()
         elif paths[0] == "items":
-            self.handle_delete_items(paths)
+            item_id = int(paths[1])
+            data_provider.fetch_item_pool().remove_item(item_id)
+            data_provider.fetch_item_pool().save()
+            self.send_response(200)
+            self.end_headers()
         elif paths[0] == "item_lines":
             item_line_id = int(paths[1])
             data_provider.fetch_item_line_pool().remove_item_line(item_line_id)
@@ -716,7 +744,11 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(200)
             self.end_headers()
         elif paths[0] == "orders":
-            self.handle_delete_orders(paths)
+            order_id = int(paths[1])
+            data_provider.fetch_order_pool().remove_order(order_id)
+            data_provider.fetch_order_pool().save()
+            self.send_response(200)
+            self.end_headers()
         elif paths[0] == "clients":
             client_id = int(paths[1])
             data_provider.fetch_client_pool().remove_client(client_id)
@@ -736,7 +768,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
     def do_DELETE(self):
         api_key = self.headers.get("API_KEY")
         user = auth_provider.get_user(api_key)
-        if user is None:
+        if user == None:
             self.send_response(401)
             self.end_headers()
         else:
@@ -744,7 +776,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
                 paths = self.path.split("/")
                 if len(paths) > 3 and paths[1] == "api" and paths[2] == "v1":
                     self.handle_delete_version_1(paths[3:], user)
-            except Exception:  # pylint: disable=broad-exception-caught  # any error -> 500
+            except Exception:
                 self.send_response(500)
                 self.end_headers()
 
