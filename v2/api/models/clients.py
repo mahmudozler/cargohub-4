@@ -37,29 +37,47 @@ class Clients:
         finally:
             self.db.close()
 
-    # def add_client(self, client_data: dict[str, Any]) -> dict[str, Any]:
-    #     try:
-    #         client = Client(
-    #             **{
-    #                 column.name: client_data[column.name]
-    #                 for column in Client.__table__.columns
-    #                 if column.name in client_data and column.name != "id"
-    #             }
-    #         )
-    #         self.db.add(client)
-    #         self.db.commit()
-    #         self.db.refresh(client)
-    #         return self._to_dict(client)
-    #     except Exception:
-    #         self.db.rollback()
-    #         raise
-    #     finally:
-    #         self.db.close()
+    def add_client(self, client_data: dict[str, Any]) -> dict[str, Any]:
+        try:
+            client = Client(
+                **{
+                    column.name: client_data[column.name]
+                    for column in Client.__table__.columns
+                    if column.name in client_data and column.name != "id"
+                }
+            )
+            self.db.add(client)
+            self.db.commit()
+            self.db.refresh(client)
+            return self._to_dict(client)
+        except Exception:
+            self.db.rollback()
+            raise
+        finally:
+            self.db.close()
 
-    # def update_client(
-    #     self, client_id: int, client_data: dict[str, Any]
-    # ) -> dict[str, Any] | None:
-    #     pass
+    def update_client(
+        self, client_id: int, client_data: dict[str, Any]
+    ) -> dict[str, Any] | None:
+        try:
+            client = self.db.get(Client, client_id)
+            if client is None:
+                return None
+
+            for column in Client.__table__.columns:
+                if column.name not in {"id", "created_at", "updated_at"} and column.name in client_data:
+                    setattr(client, column.name, client_data[column.name])
+
+            client.updated_at = datetime.now()
+
+            self.db.commit()
+            self.db.refresh(client)
+            return self._to_dict(client)
+        except Exception:
+            self.db.rollback()
+            raise
+        finally:
+            self.db.close()
 
     def remove_client(self, client_id: int) -> None:
         try:

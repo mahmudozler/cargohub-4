@@ -446,9 +446,15 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
                 paths = self.path.split("/")
                 if len(paths) > 3 and paths[1] == "api" and paths[2] == "v1":
                     self.handle_post_version_1(paths[3:], user)
-            except Exception:
+            except Exception as error:
+                import traceback
+                traceback.print_exc(file=sys.stderr)
+                body = json.dumps({"error": str(error)}).encode("utf-8")
                 self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
                 self.end_headers()
+                self.wfile.write(body)
 
     def handle_put_version_1(self, paths, user):
         if not auth_provider.has_access(user, paths, "put"):
@@ -607,14 +613,24 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
                     self.send_response(404)
                     self.end_headers()
         elif paths[0] == "clients":
-            client_id = int(paths[1])
-            content_length = int(self.headers["Content-Length"])
-            post_data = self.rfile.read(content_length)
-            updated_client = json.loads(post_data.decode())
-            data_provider.fetch_client_pool().update_client(client_id, updated_client)
-            data_provider.fetch_client_pool().save()
-            self.send_response(200)
-            self.end_headers()
+            try:
+                client_id = int(paths[1])
+                content_length = int(self.headers["Content-Length"])
+                post_data = self.rfile.read(content_length)
+                updated_client = json.loads(post_data.decode())
+                data_provider.fetch_client_pool().update_client(client_id, updated_client)
+                data_provider.fetch_client_pool().save()
+                self.send_response(200)
+                self.end_headers()
+            except Exception as error:
+                import traceback
+                traceback.print_exc(file=sys.stderr)
+                body = json.dumps({"error": str(error)}).encode("utf-8")
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
         elif paths[0] == "shipments":
             parts = len(paths)
             match parts:
