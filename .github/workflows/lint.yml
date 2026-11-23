@@ -37,4 +37,5 @@ jobs:
         if: steps.changed-files.outputs.any_changed == 'true'
         env:
           CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+          PYTHONPATH: ${{ github.workspace }}/v2/api:${{ github.workspace }}
         run: pylint $CHANGED_FILES
