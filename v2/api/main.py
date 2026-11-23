@@ -120,11 +120,12 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
     def handle_get_suppliers(self, paths):
         """Handel GET /suppliers, /suppliers/{id} en /suppliers/{id}/items af."""
         parts = len(paths)
+        suppliers = data_provider.fetch_supplier_pool()
         if parts == 1:
-            self.send_json(data_provider.fetch_supplier_pool().get_suppliers())
+            self.send_json(suppliers.get_suppliers())
         elif parts == 2:
             supplier_id = int(paths[1])
-            self.send_json(data_provider.fetch_supplier_pool().get_supplier(supplier_id))
+            self.send_json(suppliers.get_supplier(supplier_id))
         elif parts == 3 and paths[2] == "items":
             supplier_id = int(paths[1])
             self.send_json(data_provider.fetch_item_pool().get_items_for_supplier(supplier_id))
