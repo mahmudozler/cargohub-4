@@ -13,6 +13,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
+from v2.api.database.database import engine
 
 # DATABASE_URL = "postgresql+psycopg://admin:admin@localhost:5433/cargohub"
 # engine = create_engine(DATABASE_URL)

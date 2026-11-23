@@ -1,20 +1,20 @@
 import os
 
-from v2.api.models.clients import Clients
-from v2.api.models.inventories import Inventories
-from v2.api.models.item_groups import ItemGroups
-from v2.api.models.item_lines import ItemLines
-from v2.api.models.item_types import ItemTypes
-from v2.api.models.items import Items
-from v2.api.models.locations import Locations
-from v2.api.models.order_items import OrderItems
-from v2.api.models.orders import Orders
-from v2.api.models.shipment_items import ShipmentItems
-from v2.api.models.shipments import Shipments
-from v2.api.models.suppliers import Suppliers
-from v2.api.models.transfer_items import TransferItems
-from v2.api.models.transfers import Transfers
-from v2.api.models.warehouses import Warehouses
+from models.clients import Clients
+from models.inventories import Inventories
+from models.item_groups import ItemGroups
+from models.item_lines import ItemLines
+from models.item_types import ItemTypes
+from models.items import Items
+from models.locations import Locations
+from models.order_items import OrderItems
+from models.orders import Orders
+from models.shipment_items import ShipmentItems
+from models.shipments import Shipments
+from models.suppliers import Suppliers
+from models.transfer_items import TransferItems
+from models.transfers import Transfers
+from models.warehouses import Warehouses
 
 from v2.api.database.database import SessionLocal
 
