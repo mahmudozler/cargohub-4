@@ -120,17 +120,19 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
     def handle_get_suppliers(self, paths):
         """Handel GET /suppliers, /suppliers/{id} en /suppliers/{id}/items af."""
         parts = len(paths)
+        suppliers = data_provider.fetch_supplier_pool()
         if parts == 1:
-            self.send_json(data_provider.fetch_supplier_pool().get_suppliers())
-        elif parts == 2:
-            supplier_id = int(paths[1])
-            self.send_json(data_provider.fetch_supplier_pool().get_supplier(supplier_id))
+            self.send_json(suppliers.get_suppliers())
+            return
+        supplier = self.find_record(paths[1], suppliers.get_supplier, "supplier")
+        if supplier is None:
+            return
+        if parts == 2:
+            self.send_json(supplier)
         elif parts == 3 and paths[2] == "items":
-            supplier_id = int(paths[1])
-            self.send_json(data_provider.fetch_item_pool().get_items_for_supplier(supplier_id))
+            self.send_json(data_provider.fetch_item_pool().get_items_for_supplier(supplier["id"]))
         else:
-            self.send_response(404)
-            self.end_headers()
+            self.send_error_json(404, "Dit pad bestaat niet")
 
     def handle_get_shipments(self, paths):
         """Handel GET /shipments, /shipments/{id}, /shipments/{id}/orders en /shipments/{id}/items af."""
