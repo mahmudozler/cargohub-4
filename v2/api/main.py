@@ -138,7 +138,8 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
         shipments = data_provider.fetch_shipment_pool()
         if parts == 1:
             self.send_json(shipments.get_shipments())
-        elif parts == 2:
+            return
+        if parts == 2:
             shipment_id = int(paths[1])
             self.send_json(shipments.get_shipment(shipment_id))
         elif parts == 3 and paths[2] == "orders":
