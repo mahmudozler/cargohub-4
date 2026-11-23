@@ -124,6 +124,9 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
         if parts == 1:
             self.send_json(suppliers.get_suppliers())
             return
+        supplier = self.find_record(paths[1], suppliers.get_supplier, "supplier")
+        if supplier is None:
+            return
         if parts == 2:
             supplier_id = int(paths[1])
             self.send_json(suppliers.get_supplier(supplier_id))
