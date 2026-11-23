@@ -6,7 +6,7 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "v2", "api"))
 
-from models.item_lines import ItemLines  
+from models.item_lines import ItemLines
 
 # Kleine, vaste testdata: 3 item lines.
 TEST_ITEM_LINES = [
@@ -17,7 +17,7 @@ TEST_ITEM_LINES = [
 
 @pytest.fixture
 def item_lines(tmp_path):
-    """Maak een ItemLines-model met de 3 test-item-lines in een tijdelijke map."""
+    """Maak een ItemLines-model met test item lines in een tijdelijke map."""
     (tmp_path / "item_line.json").write_text(json.dumps(TEST_ITEM_LINES), encoding="utf-8")
     return ItemLines(str(tmp_path) + os.sep)
 
