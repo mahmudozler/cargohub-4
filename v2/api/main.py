@@ -143,8 +143,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
         if shipment is None:
             return
         if parts == 2:
-            shipment_id = int(paths[1])
-            self.send_json(shipments.get_shipment(shipment_id))
+            self.send_json(shipment)
         elif parts == 3 and paths[2] == "orders":
             shipment_id = int(paths[1])
             self.send_json(shipments.get_order_ids_in_shipment(shipment_id))
