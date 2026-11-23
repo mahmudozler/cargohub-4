@@ -139,6 +139,9 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
         if parts == 1:
             self.send_json(shipments.get_shipments())
             return
+        shipment = self.find_record(paths[1], shipments.get_shipment, "shipment")
+        if shipment is None:
+            return
         if parts == 2:
             shipment_id = int(paths[1])
             self.send_json(shipments.get_shipment(shipment_id))
