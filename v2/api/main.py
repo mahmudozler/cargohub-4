@@ -132,8 +132,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
         elif parts == 3 and paths[2] == "items":
             self.send_json(data_provider.fetch_item_pool().get_items_for_supplier(supplier["id"]))
         else:
-            self.send_response(404)
-            self.end_headers()
+            self.send_error_json(404, "Dit pad bestaat niet")
 
     def handle_get_shipments(self, paths):
         """Handel GET /shipments, /shipments/{id}, /shipments/{id}/orders en /shipments/{id}/items af."""
