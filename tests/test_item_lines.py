@@ -17,7 +17,7 @@ TEST_ITEM_LINES = [
 
 @pytest.fixture
 def item_lines(tmp_path):
-    """Maak een ItemLines-model met test item lines in een tijdelijke map."""
+    """Maak een ItemLines-model met de 3 test-item-lines in een tijdelijke map."""
     (tmp_path / "item_line.json").write_text(json.dumps(TEST_ITEM_LINES), encoding="utf-8")
     return ItemLines(str(tmp_path) + os.sep)
 
