@@ -4,14 +4,9 @@ import sys
 import socketserver
 from pathlib import Path
 
-if __package__ in {None, ""}:
-    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from processors import notification_processor
-    from providers import auth_provider, data_provider
-else:
-    from v2.api.processors import notification_processor
-    from v2.api.providers import auth_provider, data_provider
+from processors import notification_processor
+from providers import auth_provider, data_provider
+
 
 
 class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
