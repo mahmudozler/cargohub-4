@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from v2.api.database.database import engine
-from models import (
+from v2.api.database.models import (
     Base,
     Client,
     EndpointAccess,
