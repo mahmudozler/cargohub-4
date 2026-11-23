@@ -4,8 +4,14 @@ from models.base import Base
 
 ITEMS = []
 
+# Velden die een item minimaal moet hebben bij POST en PUT.
+REQUIRED_FIELDS = [
+    "id", "code", "description", "item_line_id",
+    "item_group_id", "item_type_id", "supplier_id",
+]
+
 class Items(Base):
-    """Alle items (producten) uit data/item.json."""
+    """Alle items uit data/item.json."""
 
     def __init__(self, root_path, is_debug=False):
         self.data_path = root_path + "item.json"
@@ -38,6 +44,10 @@ class Items(Base):
         """Geef de volledige items (niet alleen id's) van deze leverancier."""
         return [item for item in self.data if item["supplier_id"] == supplier_id]
 
+    def get_missing_fields(self, item):
+        """Geef de verplichte velden die in dit item ontbreken."""
+        return [field for field in REQUIRED_FIELDS if field not in item]
+
     def get_item_ids_where(self, field, value):
         """Geef de id's van alle items waarbij field gelijk is aan value."""
         return [item["id"] for item in self.data if item[field] == value]
@@ -61,7 +71,7 @@ class Items(Base):
         self.data = [item for item in self.data if item["id"] != item_id]
 
     def load(self, is_debug):
-        """Lees item.json in (of gebruik de lege ITEMS-lijst in debugmodus)."""
+        """Lees item.json in."""
         if is_debug:
             self.data = ITEMS
         else:

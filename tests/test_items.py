@@ -160,3 +160,19 @@ def test_remove_item_bad_unknown_id(items):
     items.remove_item(99)
 
     assert items.get_items() == TEST_ITEMS
+
+
+# get_missing_fields (controle bij POST en PUT)
+
+def test_get_missing_fields_good(items):
+    """Goed: een compleet item mist geen velden."""
+    complete = {"id": 5, "code": "ITM-5", "description": "Test", "item_line_id": 1,
+                "item_group_id": 1, "item_type_id": 1, "supplier_id": 1}
+    assert items.get_missing_fields(complete) == []
+
+
+def test_get_missing_fields_bad_missing_fields(items):
+    """Slecht: een item zonder code en description mist precies die twee velden."""
+    incomplete = {"id": 5, "item_line_id": 1, "item_group_id": 1, "item_type_id": 1,
+                  "supplier_id": 1}
+    assert items.get_missing_fields(incomplete) == ["code", "description"]
