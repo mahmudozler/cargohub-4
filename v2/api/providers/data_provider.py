@@ -1,5 +1,6 @@
 import os
 
+from database.database import SessionLocal
 from models.clients import Clients
 from models.inventories import Inventories
 from models.item_groups import ItemGroups
@@ -15,8 +16,6 @@ from models.suppliers import Suppliers
 from models.transfer_items import TransferItems
 from models.transfers import Transfers
 from models.warehouses import Warehouses
-
-from v2.api.database.database import SessionLocal
 
 DEBUG = False
 
