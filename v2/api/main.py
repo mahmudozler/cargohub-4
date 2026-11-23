@@ -135,17 +135,18 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
     def handle_get_shipments(self, paths):
         """Handel GET /shipments, /shipments/{id}, /shipments/{id}/orders en /shipments/{id}/items af."""
         parts = len(paths)
+        shipments = data_provider.fetch_shipment_pool()
         if parts == 1:
-            self.send_json(data_provider.fetch_shipment_pool().get_shipments())
+            self.send_json(shipments.get_shipments())
         elif parts == 2:
             shipment_id = int(paths[1])
-            self.send_json(data_provider.fetch_shipment_pool().get_shipment(shipment_id))
+            self.send_json(shipments.get_shipment(shipment_id))
         elif parts == 3 and paths[2] == "orders":
             shipment_id = int(paths[1])
-            self.send_json(data_provider.fetch_shipment_pool().get_order_ids_in_shipment(shipment_id))
+            self.send_json(shipments.get_order_ids_in_shipment(shipment_id))
         elif parts == 3 and paths[2] == "items":
             shipment_id = int(paths[1])
-            self.send_json(data_provider.fetch_shipment_pool().get_items_in_shipment(shipment_id))
+            self.send_json(shipments.get_items_in_shipment(shipment_id))
         else:
             self.send_response(404)
             self.end_headers()
