@@ -128,8 +128,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
         if supplier is None:
             return
         if parts == 2:
-            supplier_id = int(paths[1])
-            self.send_json(suppliers.get_supplier(supplier_id))
+            self.send_json(supplier)
         elif parts == 3 and paths[2] == "items":
             supplier_id = int(paths[1])
             self.send_json(data_provider.fetch_item_pool().get_items_for_supplier(supplier_id))
