@@ -4,9 +4,12 @@ from models.base import Base
 
 ITEM_LINES = []
 
+REQUIRED_FIELDS = ["id", "name", "description"]
+
 class ItemLines(Base):
     def __init__(self, root_path, is_debug=False):
         self.data_path = root_path + "item_line.json"
+        self.data = []
         self.load(is_debug)
 
     def get_item_lines(self):
@@ -20,24 +23,30 @@ class ItemLines(Base):
                 return item_line
         return None
 
+    def get_missing_fields(self, item_line):
+        """Geeft de verplichte velden die ontbreken in de item line."""
+        return [field for field in REQUIRED_FIELDS if field not in item_line]
+
     def add_item_line(self, item_line):
+        """Voegt een item line toe met created_at en updated_at."""
         item_line["created_at"] = self.get_timestamp()
         item_line["updated_at"] = self.get_timestamp()
         self.data.append(item_line)
 
     def update_item_line(self, item_line_id, item_line):
+        """Vervangt de item line met dit id."""
         item_line["updated_at"] = self.get_timestamp()
-        for i in range(len(self.data)):
-            if self.data[i]["id"] == item_line_id:
+        for i, existing in enumerate(self.data):
+            if existing["id"] == item_line_id:
                 self.data[i] = item_line
                 break
 
     def remove_item_line(self, item_line_id):
-        for x in self.data:
-            if x["id"] == item_line_id:
-                self.data.remove(x)
+        """Verwijder de item line met dit id."""
+        self.data = [item_line for item_line in self.data if item_line["id"] != item_line_id]
 
     def load(self, is_debug):
+        """Lees item_line.json in."""
         if is_debug:
             self.data = ITEM_LINES
         else:
@@ -45,5 +54,6 @@ class ItemLines(Base):
                 self.data = json.load(f)
 
     def save(self):
+        """Schrijf alle item lines terug naar item_line.json."""
         with open(self.data_path, "w", encoding="utf-8") as f:
             json.dump(self.data, f)
