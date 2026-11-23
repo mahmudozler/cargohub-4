@@ -147,8 +147,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
         elif parts == 3 and paths[2] == "orders":
             self.send_json(shipments.get_order_ids_in_shipment(shipment["id"]))
         elif parts == 3 and paths[2] == "items":
-            shipment_id = int(paths[1])
-            self.send_json(shipments.get_items_in_shipment(shipment_id))
+            self.send_json(shipments.get_items_in_shipment(shipment["id"]))
         else:
             self.send_response(404)
             self.end_headers()
