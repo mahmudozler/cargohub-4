@@ -612,7 +612,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
             updated_supplier = json.loads(post_data.decode())
             suppliers = data_provider.fetch_supplier_pool()
             suppliers.update_supplier(supplier_id, updated_supplier)
-            data_provider.fetch_supplier_pool().save()
+            suppliers.save()
             self.send_response(200)
             self.end_headers()
         elif paths[0] == "orders":
