@@ -429,8 +429,9 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
             content_length = int(self.headers["Content-Length"])
             post_data = self.rfile.read(content_length)
             new_supplier = json.loads(post_data.decode())
-            data_provider.fetch_supplier_pool().add_supplier(new_supplier)
-            data_provider.fetch_supplier_pool().save()
+            suppliers = data_provider.fetch_supplier_pool()
+            suppliers.add_supplier(new_supplier)
+            suppliers.save()
             self.send_response(201)
             self.end_headers()
         elif paths[0] == "orders":
