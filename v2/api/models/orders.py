@@ -64,11 +64,6 @@ class Orders(Base):
             self.update_items_in_order(order_id, items)
 
     def update_items_in_order(self, order_id, items):
-        """Replace the items of an order and keep `quantity_allocated` in sync.
-
-        For each item, the change in ordered amount (new - old) is applied to the
-        inventory row with the most on-hand stock for that item, clamped at 0 so
-        `quantity_allocated` never goes negative."""
         current = self.get_items_in_order(order_id)
         current_by_item = {x["item_id"]: x["amount"] for x in current}
         new_by_item = {x["item_id"]: x["amount"] for x in items}
