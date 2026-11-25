@@ -10,21 +10,17 @@ from sqlalchemy import (
     Numeric,
     String,
     UniqueConstraint,
-    create_engine,
 )
-from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
+from v2.api.database.database import engine
 
-
-
-DATABASE_URL = "postgresql+psycopg://admin:admin@localhost:5433/cargohub"
-
-engine = create_engine(DATABASE_URL)
+# DATABASE_URL = "postgresql+psycopg://admin:admin@localhost:5433/cargohub"
+# engine = create_engine(DATABASE_URL)
 
 
 class Base(DeclarativeBase):
-    """Base class used to collect the database tables."""
+    pass
 
 
 
@@ -37,7 +33,7 @@ class TimestampMixin:
 class Warehouse(TimestampMixin, Base):
     __tablename__ = "warehouse"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     code: Mapped[str | None] = mapped_column(String)
     name: Mapped[str | None] = mapped_column(String)
     address: Mapped[str | None] = mapped_column(String)
@@ -55,7 +51,7 @@ class Warehouse(TimestampMixin, Base):
 class Location(TimestampMixin, Base):
     __tablename__ = "location"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     warehouse_id: Mapped[int | None] = mapped_column(ForeignKey("warehouse.id"))
     code: Mapped[str | None] = mapped_column(String)
     name: Mapped[str | None] = mapped_column(String)
@@ -72,7 +68,7 @@ class Location(TimestampMixin, Base):
 class ItemLine(TimestampMixin, Base):
     __tablename__ = "item_line"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str | None] = mapped_column(String)
     description: Mapped[str | None] = mapped_column(String)
     items: Mapped[list[Item]] = relationship(back_populates="item_line")
@@ -81,7 +77,7 @@ class ItemLine(TimestampMixin, Base):
 class ItemGroup(TimestampMixin, Base):
     __tablename__ = "item_group"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str | None] = mapped_column(String)
     description: Mapped[str | None] = mapped_column(String)
     items: Mapped[list[Item]] = relationship(back_populates="item_group")
@@ -90,7 +86,7 @@ class ItemGroup(TimestampMixin, Base):
 class ItemType(TimestampMixin, Base):
     __tablename__ = "item_type"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str | None] = mapped_column(String)
     description: Mapped[str | None] = mapped_column(String)
     items: Mapped[list[Item]] = relationship(back_populates="item_type")
@@ -99,7 +95,7 @@ class ItemType(TimestampMixin, Base):
 class Supplier(TimestampMixin, Base):
     __tablename__ = "supplier"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     code: Mapped[str | None] = mapped_column(String)
     name: Mapped[str | None] = mapped_column(String)
     address: Mapped[str | None] = mapped_column(String)
@@ -116,7 +112,7 @@ class Supplier(TimestampMixin, Base):
 class Item(TimestampMixin, Base):
     __tablename__ = "item"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     code: Mapped[str | None] = mapped_column(String)
     description: Mapped[str | None] = mapped_column(String)
     barcode: Mapped[str | None] = mapped_column(String)
@@ -160,7 +156,11 @@ class Inventory(TimestampMixin, Base):
 class Client(TimestampMixin, Base):
     __tablename__ = "client"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        autoincrement=True,
+    )
     name: Mapped[str | None] = mapped_column(String)
     address: Mapped[str | None] = mapped_column(String)
     city: Mapped[str | None] = mapped_column(String)
@@ -184,7 +184,7 @@ class Client(TimestampMixin, Base):
 class Order(TimestampMixin, Base):
     __tablename__ = "order"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     client_id: Mapped[int | None] = mapped_column(ForeignKey("client.id"))
     ship_to_client_id: Mapped[int | None] = mapped_column(ForeignKey("client.id"))
     bill_to_client_id: Mapped[int | None] = mapped_column(ForeignKey("client.id"))
@@ -212,7 +212,7 @@ class Order(TimestampMixin, Base):
 class OrderItem(Base):
     __tablename__ = "order_item"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     order_id: Mapped[int] = mapped_column(ForeignKey("order.id"))
     item_id: Mapped[int] = mapped_column(ForeignKey("item.id"))
     amount: Mapped[int | None] = mapped_column(Integer)
@@ -224,7 +224,7 @@ class OrderItem(Base):
 class Shipment(TimestampMixin, Base):
     __tablename__ = "shipment"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     order_id: Mapped[int | None] = mapped_column(ForeignKey("order.id"))
     reference: Mapped[str | None] = mapped_column(String)
     shipment_type: Mapped[str | None] = mapped_column(String)
@@ -240,7 +240,7 @@ class Shipment(TimestampMixin, Base):
 class ShipmentItem(Base):
     __tablename__ = "shipment_item"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     shipment_id: Mapped[int] = mapped_column(ForeignKey("shipment.id"))
     item_id: Mapped[int] = mapped_column(ForeignKey("item.id"))
     amount: Mapped[int | None] = mapped_column(Integer)
@@ -251,7 +251,7 @@ class ShipmentItem(Base):
 class Transfer(TimestampMixin, Base):
     __tablename__ = "transfer"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     from_location_id: Mapped[int | None] = mapped_column(ForeignKey("location.id"))
     to_location_id: Mapped[int | None] = mapped_column(ForeignKey("location.id"))
     reference: Mapped[str | None] = mapped_column(String)
@@ -268,7 +268,7 @@ class Transfer(TimestampMixin, Base):
 class TransferItem(Base):
     __tablename__ = "transfer_item"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     transfer_id: Mapped[int] = mapped_column(ForeignKey("transfer.id"))
     item_id: Mapped[int] = mapped_column(ForeignKey("item.id"))
     amount: Mapped[int | None] = mapped_column(Integer)
@@ -279,7 +279,7 @@ class TransferItem(Base):
 class User(Base):
     __tablename__ = "user"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     api_key: Mapped[str] = mapped_column(String, unique=True)
     app: Mapped[str | None] = mapped_column(String)
     endpoint_access: Mapped[list[EndpointAccess]] = relationship(
@@ -291,7 +291,7 @@ class EndpointAccess(Base):
     __tablename__ = "endpoint_access"
     __table_args__ = (UniqueConstraint("user_id", "resource"),)
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
     resource: Mapped[str] = mapped_column(String)
     can_get: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -299,10 +299,3 @@ class EndpointAccess(Base):
     can_put: Mapped[bool] = mapped_column(Boolean, default=False)
     can_delete: Mapped[bool] = mapped_column(Boolean, default=False)
     user: Mapped[User] = relationship(back_populates="endpoint_access")
-
-
-def create_database():
-    Base.metadata.create_all(engine)
-
-create_database()
-

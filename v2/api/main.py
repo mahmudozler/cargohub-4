@@ -1,11 +1,13 @@
-import socketserver
 import http.server
 import json
-
-from providers import auth_provider
-from providers import data_provider
+import sys
+import socketserver
+from pathlib import Path
 
 from processors import notification_processor
+from providers import auth_provider, data_provider
+
+
 
 class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
 
@@ -439,10 +441,12 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
             content_length = int(self.headers["Content-Length"])
             post_data = self.rfile.read(content_length)
             new_client = json.loads(post_data.decode())
-            data_provider.fetch_client_pool().add_client(new_client)
-            data_provider.fetch_client_pool().save()
+            client_pool = data_provider.fetch_client_pool()
+            created_client = client_pool.add_client(new_client)
             self.send_response(201)
+            self.send_header("Content-type", "application/json")
             self.end_headers()
+            self.wfile.write(json.dumps(created_client).encode("utf-8"))
         elif paths[0] == "shipments":
             content_length = int(self.headers["Content-Length"])
             post_data = self.rfile.read(content_length)
@@ -616,14 +620,24 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
         elif paths[0] == "orders":
             self.handle_put_orders(paths)
         elif paths[0] == "clients":
-            client_id = int(paths[1])
-            content_length = int(self.headers["Content-Length"])
-            post_data = self.rfile.read(content_length)
-            updated_client = json.loads(post_data.decode())
-            data_provider.fetch_client_pool().update_client(client_id, updated_client)
-            data_provider.fetch_client_pool().save()
-            self.send_response(200)
-            self.end_headers()
+            try:
+                client_id = int(paths[1])
+                content_length = int(self.headers["Content-Length"])
+                post_data = self.rfile.read(content_length)
+                updated_client = json.loads(post_data.decode())
+                data_provider.fetch_client_pool().update_client(client_id, updated_client)
+                data_provider.fetch_client_pool().save()
+                self.send_response(200)
+                self.end_headers()
+            except Exception as error:
+                import traceback
+                traceback.print_exc(file=sys.stderr)
+                body = json.dumps({"error": str(error)}).encode("utf-8")
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
         elif paths[0] == "shipments":
             parts = len(paths)
             match parts:
@@ -781,6 +795,7 @@ class ApiRequestHandler(http.server.BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     PORT = 8000
+    #single-threaded server
     with socketserver.TCPServer(("", PORT), ApiRequestHandler) as httpd:
         notification_processor.start()
         print(f"Serving on port {PORT}...")
